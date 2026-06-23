@@ -1,5 +1,5 @@
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 
 # 1. رابط قاعدة البيانات
 DATABASE_URL = "postgresql://neondb_owner:npg_RamBCOz0W8Ub@ep-rapid-dream-at6x8dkc-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
@@ -22,6 +22,7 @@ def reload_full_database():
     })
 
     # الاحتفاظ بالأعمدة الأساسية فقط
+    # ملاحظة: إذا قمت بإضافة 'release_year' في ملف الـ CSV كما اتفقنا، أضفها هنا في هذه القائمة
     cols = ["brand", "model_name", "battery_mah", "cores", "ram_mb", "primary_camera_mp", "price_usd"]
     df = df[cols]
 
@@ -32,14 +33,10 @@ def reload_full_database():
 
     print(f"📦 Injecting {len(df)} phones into Neon...")
 
-    # 3. مسح الجدول القديم بالكامل وإنشاء واحد جديد
-    with engine.connect() as conn:
-        conn.execute(text('DROP TABLE IF EXISTS "PhoneCatalog"'))
-        conn.commit()
+    # 3. رفع البيانات كإضافة (append) بدون مسح هيكل Prisma
+    df.to_sql('PhoneCatalog', engine, if_exists='append', index=False)
     
-    # 4. رفع البيانات كاملة
-    df.to_sql('PhoneCatalog', engine, if_exists='replace', index=False)
-    print("✅ Done! Neon is now fully reloaded with all data.")
+    print("✅ Done! Neon is now fully reloaded with all data safely.")
 
 if __name__ == "__main__":
     reload_full_database()
